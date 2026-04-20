@@ -11,7 +11,7 @@
 [![MCP](https://img.shields.io/badge/MCP-compatible-blueviolet)](https://modelcontextprotocol.io/)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.md)
 
-Send a link → get AI-searchable memory. Works from Telegram, browser, iOS Shortcuts, or any HTTP client.
+Send a link → get AI-searchable memory. Works from Telegram, browser bookmarklet, or any HTTP client.
 Everything runs on a **$5 VPS** you control. No subscription. No data sent to third parties.
 
 [Quick Start](#quick-start) · [Features](#features) · [MCP Integration](#mcp-integration-ai-agents) · [Roadmap](#roadmap) · [Contributing](#contributing)
@@ -39,7 +39,7 @@ AlManak turns your saved links into a **queryable knowledge base** that your AI 
 ## How it works
 
 ```
-You find a link  ──→  Telegram bot  ──┐
+You find a link  ──→  Telegram bot   ──┐
 anywhere                               │
                   Bookmarklet        ──┼──→  AlManak (VPS)  ──→  MCP  ──→  AI agent
                   API / CSV          ──┘       │
@@ -164,7 +164,7 @@ Bot:    ✅ Saved #848
 
 ### Option 3 — REST API
 
-For integrations (iOS Shortcuts, Raycast, Alfred, n8n, scripts):
+For integrations (Raycast, Alfred, n8n, iOS Shortcuts, scripts — anything that can make an HTTP request):
 
 ```bash
 curl -X POST https://mcp.example.com/ingest/links \
@@ -299,7 +299,7 @@ almanak/
 - [ ] **Web UI** — browse, search and annotate links from a browser dashboard
 - [ ] **LLM enrichment** — optional GPT/Ollama pass to improve classification & summaries
 - [ ] **Browser extension** — Chrome/Firefox, replaces the bookmarklet
-- [ ] **iOS Shortcuts template** — one-tap save from Safari Share Sheet
+- [ ] **iOS Shortcuts template** — pre-made `.shortcut` file for one-tap save from Safari Share Sheet (the REST API already works manually)
 - [ ] **RSS ingestion** — automatically ingest feeds into your KB
 - [ ] **Duplicate clustering** — group near-duplicate URLs across sources
 - [ ] **Export** — Markdown, JSON, Obsidian vault
