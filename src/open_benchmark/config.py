@@ -50,6 +50,9 @@ class Settings(BaseSettings):
     ingest_host: str = Field(default="127.0.0.1", validation_alias="INGEST_HOST")
     ingest_port: int = Field(default=8766, validation_alias="INGEST_PORT")
     ingest_api_key: str = Field(default="", validation_alias="INGEST_API_KEY")
+    # Public-facing base URL (e.g. https://mcp.example.com or Tailscale URL).
+    # When set, bookmarklet and /add links use this URL instead of the detected one.
+    ingest_public_url: str = Field(default="", validation_alias="INGEST_PUBLIC_URL")
 
     # ── Telegram bot (optional) ───────────────────────────────────────────────
     telegram_bot_token: str = Field(default="", validation_alias="BENCHMARK_BOT_TOKEN")

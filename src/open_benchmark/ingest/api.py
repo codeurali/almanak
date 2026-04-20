@@ -286,7 +286,10 @@ def bookmarklet_setup(request: Request, key: str = Query("")):
     if not _check_key(key):
         return HTMLResponse(_html_page("⛔ Invalid key", "Add ?key=YOUR_API_KEY to the URL.", ok=False), status_code=401)
 
-    base = str(request.base_url).rstrip("/")
+    # Prefer explicit public URL (set INGEST_PUBLIC_URL) so reverse proxies
+    # (Tailscale serve, nginx, Caddy) don't cause the bookmarklet to point at
+    # 127.0.0.1 instead of the real public hostname.
+    base = settings.ingest_public_url.rstrip("/") if settings.ingest_public_url else str(request.base_url).rstrip("/")
     bm_js = (
         f"javascript:(function(){{"
         f"window.open('{base}/add?key={key}&url='+encodeURIComponent(location.href),'_ob','width=400,height=260');"
