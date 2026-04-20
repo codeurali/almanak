@@ -1,10 +1,38 @@
+<div align="center">
+
 # AlManak
 
-> Self-hosted AI memory for the links that matter.
+**Self-hosted AI memory for the links that matter.**
 
-Send a link to your AlManak buddy on Telegram, save it from your browser via the bookmarklet, or let your AI agent query it — all from the same self-hosted stack on a $5 VPS.
+[![CI](https://github.com/codeurali/almanak/actions/workflows/ci.yml/badge.svg)](https://github.com/codeurali/almanak/actions/workflows/ci.yml)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue?logo=python&logoColor=white)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![Docker](https://img.shields.io/badge/docker-compose-2496ED?logo=docker&logoColor=white)](docker-compose.yml)
+[![MCP](https://img.shields.io/badge/MCP-compatible-blueviolet)](https://modelcontextprotocol.io/)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.md)
 
-AlManak automatically extracts metadata, classifies content, deduplicates, builds semantic indexes, and exposes everything via a **Model Context Protocol (MCP)** server so any AI agent can search your knowledge base in natural language.
+Send a link → get AI-searchable memory. Works from Telegram, browser, iOS Shortcuts, or any HTTP client.
+Everything runs on a **$5 VPS** you control. No subscription. No data sent to third parties.
+
+[Quick Start](#quick-start) · [Features](#features) · [MCP Integration](#mcp-integration-ai-agents) · [Roadmap](#roadmap) · [Contributing](#contributing)
+
+</div>
+
+---
+
+## Why AlManak?
+
+| | Pocket / Raindrop | Readwise | AlManak |
+|---|---|---|---|
+| **Self-hosted** | ❌ | ❌ | ✅ |
+| **Your data only** | ❌ | ❌ | ✅ |
+| **AI agent (MCP)** | ❌ | ❌ | ✅ |
+| **Semantic search** | ❌ | ✅ | ✅ |
+| **Telegram bot** | ❌ | ❌ | ✅ |
+| **Free forever** | ❌ | ❌ | ✅ |
+| **Open source** | ❌ | ❌ | ✅ |
+
+AlManak turns your saved links into a **queryable knowledge base** that your AI agent (Claude, VS Code Copilot, Hermes, any MCP client) can search in natural language — all without your data leaving your machine.
 
 ---
 
@@ -27,17 +55,19 @@ anywhere                               │
 
 ## Features
 
-- **Telegram bot** — send links from your phone as naturally as messaging a friend
-- **Bookmarklet** — one-click save from any browser, including iOS Safari
-- **MCP HTTP + stdio** — connects to any MCP-compatible AI agent
-- **Semantic search** — Qdrant + FastEmbed (`BAAI/bge-small-en-v1.5`, CPU only, no GPU needed)
-- **FTS fallback** — SQLite FTS5 when Qdrant is unavailable
-- **Knowledge graph** — tag co-occurrence, same-domain, cosine similarity links
-- **Auto-classification** — detects type (repo, article, video…) and subject (ai, dev-tools, azure…)
-- **Deduplication** — URL fingerprinting, no duplicate entries
-- **Bearer auth** — all HTTP endpoints protected
-- **HTTPS auto-cert** — Caddy handles Let's Encrypt automatically
-- **Docker Compose** — one command deploy
+| | |
+|---|---|
+| 📱 **Telegram bot** | Send links from your phone as naturally as messaging a friend |
+| 🔖 **Bookmarklet** | One-click save from any browser, including iOS Safari |
+| 🤖 **MCP HTTP + stdio** | Connects to any MCP-compatible AI agent (VS Code, Claude, Hermes…) |
+| 🔍 **Semantic search** | Qdrant + FastEmbed (`BAAI/bge-small-en-v1.5`) — CPU only, no GPU needed |
+| 💾 **FTS fallback** | SQLite FTS5 full-text search when Qdrant is unavailable |
+| 🕸️ **Knowledge graph** | Tag co-occurrence, same-domain, cosine similarity links |
+| 🏷️ **Auto-classification** | Detects type (repo, article, video, model…) and subject (ai, dev-tools…) |
+| 🔁 **Deduplication** | URL fingerprinting — no duplicate entries |
+| 🔐 **Bearer auth** | All HTTP endpoints protected by API key |
+| 🔒 **Auto-HTTPS** | Caddy handles Let's Encrypt automatically |
+| 🐳 **Docker Compose** | One-command deploy on any VPS |
 
 ---
 
@@ -259,6 +289,41 @@ almanak/
 | `ALLOWED_USER_ID` | `` | Your Telegram user ID |
 | `FEATURE_TRAFILATURA` | `true` | Readable content extraction |
 | `FEATURE_GRAPH` | `true` | Knowledge graph building |
+
+---
+
+---
+
+## Roadmap
+
+- [ ] **Web UI** — browse, search and annotate links from a browser dashboard
+- [ ] **LLM enrichment** — optional GPT/Ollama pass to improve classification & summaries
+- [ ] **Browser extension** — Chrome/Firefox, replaces the bookmarklet
+- [ ] **iOS Shortcuts template** — one-tap save from Safari Share Sheet
+- [ ] **RSS ingestion** — automatically ingest feeds into your KB
+- [ ] **Duplicate clustering** — group near-duplicate URLs across sources
+- [ ] **Export** — Markdown, JSON, Obsidian vault
+
+> Have a feature request? [Open an issue](https://github.com/codeurali/almanak/issues) — PRs are very welcome.
+
+---
+
+## Contributing
+
+Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) first.
+
+```bash
+git clone https://github.com/codeurali/almanak
+cd almanak
+pip install -e ".[dev]"
+pytest
+```
+
+---
+
+## ⭐ Support the project
+
+If AlManak saves you time or helps your workflow, **leaving a star is the best way to support it** and help others discover it.
 
 ---
 
