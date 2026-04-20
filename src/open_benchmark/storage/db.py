@@ -244,6 +244,65 @@ def delete(entry_id: int, db_path: str | None = None) -> None:
         c.commit()
 
 
+def update_entry(
+    entry_id: int,
+    *,
+    title: str | None = None,
+    description: str | None = None,
+    content_text: str | None = None,
+    btype: str | None = None,
+    subject: str | None = None,
+    tags: str | None = None,
+    raw_text: str | None = None,
+    canonical_url: str | None = None,
+    extraction_confidence: float | None = None,
+    status: str | None = None,
+    db_path: str | None = None,
+) -> None:
+    """Partially update an entry — only non-None fields are written."""
+    fields: list[str] = []
+    values: list[Any] = []
+    for col, val in [
+        ("title", title),
+        ("description", description),
+        ("content_text", content_text),
+        ("type", btype),
+        ("subject", subject),
+        ("tags", tags),
+        ("raw_text", raw_text),
+        ("canonical_url", canonical_url),
+        ("extraction_confidence", extraction_confidence),
+        ("status", status),
+    ]:
+        if val is not None:
+            fields.append(f"{col}=?")
+            values.append(val)
+    if not fields:
+        return
+    # Rebuild summary if title/description/type/subject changed
+    if title is not None or description is not None or btype is not None or subject is not None:
+        with conn(db_path) as c:
+            row = c.execute("SELECT * FROM benchmarks WHERE id=?", (entry_id,)).fetchone()
+        if row:
+            cur_title = title if title is not None else row["title"]
+            cur_desc = description if description is not None else row["description"]
+            cur_type = btype if btype is not None else row["type"]
+            cur_subj = subject if subject is not None else row["subject"]
+            fields.append("summary=?")
+            values.append(build_summary(cur_title, cur_desc, cur_type, cur_subj))
+    values.append(entry_id)
+    with conn(db_path) as c:
+        c.execute(f"UPDATE benchmarks SET {', '.join(fields)} WHERE id=?", values)
+        c.commit()
+
+
+def list_all(db_path: str | None = None) -> list[dict]:
+    """Return all entries ordered by id."""
+    with conn(db_path) as c:
+        rows = c.execute("SELECT * FROM benchmarks ORDER BY id").fetchall()
+    return [dict(r) for r in rows]
+
+
 def export_csv(db_path: str | None = None) -> None:
     """Rewrite the live CSV from the current DB."""
     path = str(settings.csv_live_path)
