@@ -4,7 +4,9 @@ extractor/fetch.py — Generic multi-layer URL metadata + content extractor.
 Layer 1: HTTP GET (redirect-following, canonical URL resolution)
 Layer 2: HTML meta extraction (og:*, twitter:*, <title>, <meta description>)
 Layer 3: Readable content extraction via trafilatura (optional, feature-flagged)
-Layer 4: GitHub-specific enrichment (optional, feature-flagged)
+Layer 4: Per-domain providers — GitHub, Twitter/X, YouTube, HN context, + custom plugins
+         (extractor/providers/). Each provider targets specific URL patterns and enriches
+         the result with API data, structured metadata, and auto-tags.
 
 Returns an ExtractionResult dataclass. Never raises; errors captured as status.
 """
@@ -14,12 +16,12 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 from html.parser import HTMLParser
-from typing import Optional
 from urllib.parse import urlparse
 
 import requests
 
 from open_benchmark.config import settings
+from open_benchmark.extractor.providers import run_providers
 
 # ── Result dataclass ───────────────────────────────────────────────────────────
 
@@ -103,53 +105,6 @@ class _MetaParser(HTMLParser):
         ).strip()[:500]
 
 
-# ── GitHub enrichment ─────────────────────────────────────────────────────────
-
-_GH_RE = re.compile(r"^https?://github\.com/([^/]+/[^/]+)(?:/|$)")
-
-
-def _github_tags(url: str) -> list[str]:
-    """Return ['github', 'open-source'] for any github.com URL."""
-    if _GH_RE.match(url):
-        return ["github", "open-source"]
-    return []
-
-
-def _github_enrich(url: str, result: ExtractionResult) -> None:
-    """Try to call the GitHub API to enrich star/topic/language metadata."""
-    m = _GH_RE.match(url)
-    if not m:
-        return
-    repo = m.group(1)
-    try:
-        resp = requests.get(
-            f"https://api.github.com/repos/{repo}",
-            headers={
-                "Accept": "application/vnd.github.v3+json",
-                "User-Agent": settings.fetch_user_agent,
-            },
-            timeout=settings.fetch_timeout,
-        )
-        if resp.status_code == 200:
-            data = resp.json()
-            if not result.description and data.get("description"):
-                result.description = data["description"]
-            topics: list[str] = data.get("topics", [])
-            lang = data.get("language") or ""
-            extra_tags = topics + ([lang.lower()] if lang else [])
-            # Merge (avoid duplicates)
-            existing = set(result.tags)
-            result.tags += [t for t in extra_tags if t not in existing]
-            stars = data.get("stargazers_count", 0)
-            if stars:
-                result.raw_text = (
-                    f"GitHub repo: {repo}. Stars: {stars}. "
-                    f"Language: {lang}. Topics: {', '.join(topics)}."
-                )
-    except Exception:
-        pass  # GitHub enrichment is best-effort
-
-
 # ── Content extraction (trafilatura) ─────────────────────────────────────────
 
 def _extract_content(html: str) -> str:
@@ -223,10 +178,8 @@ def extract(url: str) -> ExtractionResult:
     if settings.feature_trafilatura:
         result.content_text = _extract_content(html)
 
-    # Layer 4 — GitHub enrichment
-    if settings.feature_github_extractor:
-        result.tags += _github_tags(url)
-        _github_enrich(url, result)
+    # Layer 4 — Provider enrichment (GitHub, Twitter/X, YouTube, HN, custom plugins)
+    run_providers(url, result)
 
     # Confidence scoring
     filled = sum([

@@ -67,6 +67,12 @@ class Settings(BaseSettings):
     feature_github_extractor: bool = Field(
         default=True, validation_alias="FEATURE_GITHUB_EXTRACTOR"
     )
+    feature_twitter_extract: bool = Field(
+        default=True, validation_alias="FEATURE_TWITTER_EXTRACT"
+    )
+    feature_yt_extract: bool = Field(default=True, validation_alias="FEATURE_YT_EXTRACT")
+    feature_hn_context: bool = Field(default=True, validation_alias="FEATURE_HN_CONTEXT")
+    hn_min_points: int = Field(default=10, validation_alias="HN_MIN_POINTS")
     feature_graph: bool = Field(default=True, validation_alias="FEATURE_GRAPH")
 
     # ── Graph ─────────────────────────────────────────────────────────────────
