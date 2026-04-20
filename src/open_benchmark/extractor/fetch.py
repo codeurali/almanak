@@ -13,10 +13,8 @@ Returns an ExtractionResult dataclass. Never raises; errors captured as status.
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass, field
 from html.parser import HTMLParser
-from urllib.parse import urlparse
 
 import requests
 
@@ -192,5 +190,5 @@ def extract(url: str) -> ExtractionResult:
 
     if result.extraction_confidence < 0.25:
         result.status = "partial"
-    
+
     return result

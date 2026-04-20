@@ -15,13 +15,11 @@ Auth: Bearer token in Authorization header (INGEST_API_KEY env var).
 
 from __future__ import annotations
 
-import os
-import sys
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request, status
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from pydantic import BaseModel, HttpUrl
+from pydantic import BaseModel
 
 from open_benchmark.config import settings
 from open_benchmark.extractor.classify import classify_subject, classify_type

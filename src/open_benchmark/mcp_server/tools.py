@@ -90,7 +90,6 @@ def get_related_benchmarks(
 
 def list_subjects() -> list[str]:
     """Return all distinct subjects present in the database."""
-    import sqlite3
     from open_benchmark.storage.db import conn
 
     with conn() as c:

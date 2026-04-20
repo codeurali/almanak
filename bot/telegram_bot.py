@@ -42,7 +42,7 @@ from open_benchmark.extractor.fetch import extract
 from open_benchmark.graph import relations as graph
 from open_benchmark.indexer import qdrant_index as qdrant
 from open_benchmark.storage import db as storage
-from open_benchmark.storage.db import export_csv, init_db
+from open_benchmark.storage.db import init_db
 
 # ── Telegram config ────────────────────────────────────────────────────────────
 

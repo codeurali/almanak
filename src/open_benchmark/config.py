@@ -6,7 +6,6 @@ All settings are read from environment variables (and .env file via dotenv).
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 
 from pydantic import Field
