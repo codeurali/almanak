@@ -1,0 +1,15 @@
+# Core
+requests>=2.31
+mcp[cli]>=1.6
+fastapi>=0.111
+uvicorn[standard]>=0.29
+starlette>=0.37
+pydantic>=2.7
+pydantic-settings>=2.3
+
+# Vector search
+qdrant-client>=1.9
+fastembed>=0.3
+
+# Content extraction
+trafilatura>=1.10

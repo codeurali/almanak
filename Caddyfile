@@ -1,0 +1,27 @@
+# Caddyfile — auto-HTTPS reverse proxy for open-benchmark MCP
+#
+# Two modes depending on MCP_DOMAIN in your .env:
+#
+#   With a real domain (e.g. mcp.example.com):
+#     → Caddy fetches a Let's Encrypt certificate automatically.
+#     → VS Code config: https://mcp.example.com/mcp
+#
+#   Without a domain (IP-only VPS, MCP_DOMAIN=localhost or unset):
+#     → Caddy generates a self-signed cert (browser warns, VS Code works with
+#       "allowInsecureCertificate": true in the MCP config).
+#     → VS Code config: https://<vps-ip>/mcp
+#
+# Prerequisites (real domain):
+#   - DNS A record pointing MCP_DOMAIN → your VPS public IP
+#   - Ports 80 and 443 open in the VPS firewall
+
+{$MCP_DOMAIN:localhost} {
+    # MCP server — all paths by default
+    reverse_proxy /mcp* mcp:8765
+
+    # Ingest API — bookmarklet setup + one-click save only
+    # (full ingest API protected by Bearer token)
+    reverse_proxy /add* ingest:8766
+    reverse_proxy /bookmarklet* ingest:8766
+    reverse_proxy /health ingest:8766
+}

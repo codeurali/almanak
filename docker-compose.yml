@@ -1,0 +1,64 @@
+services:
+  qdrant:
+    image: qdrant/qdrant:v1.9.4
+    # Qdrant is internal-only — not exposed publicly
+    expose:
+      - "6333"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    restart: unless-stopped
+
+  mcp:
+    build: .
+    command: ["python", "-m", "open_benchmark.mcp_server.server", "--http"]
+    # Internal only — Caddy terminates TLS in front
+    expose:
+      - "8765"
+    env_file: .env
+    environment:
+      - QDRANT_URL=http://qdrant:6333
+      - MCP_HOST=0.0.0.0
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - qdrant
+    restart: unless-stopped
+
+  ingest:
+    build: .
+    command: ["python", "-m", "open_benchmark.ingest.api"]
+    # Internal only — not exposed publicly
+    expose:
+      - "8766"
+    env_file: .env
+    environment:
+      - QDRANT_URL=http://qdrant:6333
+      - INGEST_HOST=0.0.0.0
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - qdrant
+    restart: unless-stopped
+
+  # ── Caddy: auto-HTTPS reverse proxy ────────────────────────────────────────
+  # Handles Let's Encrypt certs automatically. Just set MCP_DOMAIN in .env.
+  # If no domain is set (IP-only VPS), Caddy uses a self-signed cert instead.
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      - MCP_DOMAIN=${MCP_DOMAIN:-localhost}
+    depends_on:
+      - mcp
+    restart: unless-stopped
+
+volumes:
+  qdrant_data:
+  caddy_data:
+  caddy_config:
