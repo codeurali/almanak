@@ -15,6 +15,7 @@ Auth: Bearer token in Authorization header (INGEST_API_KEY env var).
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request, status
 from fastapi.responses import HTMLResponse
@@ -140,6 +141,7 @@ def ingest_link(body: IngestLinkRequest):
     if body.dry_run or existing:
         return response_base
 
+    since = datetime.now(timezone.utc).isoformat()
     entry_id = storage.insert(
         url=body.url,
         canonical_url=result.canonical_url,
@@ -155,9 +157,9 @@ def ingest_link(body: IngestLinkRequest):
         visibility=body.visibility,
     )
 
-    # Async-ish: index in background (best-effort)
+    # Index only the newly inserted entry (incremental — avoids OOM on full re-index)
     try:
-        qdrant.index(db_path=None)  # full incremental
+        qdrant.index(since=since)
     except Exception:
         pass
 

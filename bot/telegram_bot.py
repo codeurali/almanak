@@ -160,6 +160,7 @@ def _handle_save(chat_id: int, text: str) -> None:
         send(chat_id, f'⚠️ Already saved as <b>#{existing["id"]}</b> — {_fmt(existing)}')
         return
 
+    since = datetime.now(timezone.utc).isoformat()
     entry_id = storage.insert(
         url=url,
         canonical_url=result.canonical_url,
@@ -174,9 +175,9 @@ def _handle_save(chat_id: int, text: str) -> None:
         extraction_confidence=result.extraction_confidence,
     )
 
-    # Async indexing + graph (fire-and-forget)
+    # Index only the newly inserted entry (incremental — avoids OOM on full re-index)
     try:
-        qdrant.index()
+        qdrant.index(since=since)
     except Exception:
         pass
     if settings.feature_graph:
@@ -321,7 +322,7 @@ def run() -> None:
             resp = _tg("getUpdates", offset=offset, timeout=POLL_TIMEOUT)
             for update in resp.get("result", []):
                 offset = update["update_id"] + 1
-                msg = update.get("message") or update.get("edited_message")
+                msg = update.get("message")
                 if not msg:
                     continue
                 uid = msg.get("from", {}).get("id")
