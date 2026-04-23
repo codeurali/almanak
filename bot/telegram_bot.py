@@ -57,6 +57,18 @@ if not ALLOWED_UID:
 API = f"https://api.telegram.org/bot{TOKEN}"
 POLL_TIMEOUT = 30
 
+# Commands registered with Telegram — drives /autocomplete and the ☰ menu button
+BOT_COMMANDS = [
+    {"command": "list",   "description": "Last N saved entries (e.g. /list 20)"},
+    {"command": "search", "description": "Full-text search  (e.g. /search RAG)"},
+    {"command": "stats",  "description": "Counts by type & subject"},
+    {"command": "tag",    "description": "Set tags on an entry  (e.g. /tag 42 llm rag)"},
+    {"command": "note",   "description": "Add/update a note  (e.g. /note 42 great read)"},
+    {"command": "rm",     "description": "Delete an entry  (e.g. /rm 42)"},
+    {"command": "export", "description": "Download all entries as CSV"},
+    {"command": "help",   "description": "Show all commands"},
+]
+
 URL_RE = re.compile(r"(?:https?://|(?<![\w@])(?=[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}))[^\s<>\"']+")
 TAG_RE = re.compile(r"#([A-Za-z0-9_\-]+)")
 
@@ -346,8 +358,21 @@ def _save_offset(offset: int) -> None:
         print(f"[bot] offset save error: {exc}", flush=True)
 
 
+def _register_commands() -> None:
+    """Push command list to Telegram — enables / autocomplete and ☰ menu button."""
+    result = _tg("setMyCommands", commands=BOT_COMMANDS)
+    if result.get("result"):
+        print("[bot] commands registered", flush=True)
+    else:
+        print(f"[bot] setMyCommands failed: {result}", flush=True)
+
+    # Set the ☰ menu button to show the command list
+    _tg("setChatMenuButton", menu_button={"type": "commands"})
+
+
 def run() -> None:
     init_db()
+    _register_commands()
     offset = _load_offset()
     print(f"[bot] Starting — allowed UID: {ALLOWED_UID}, offset: {offset}", flush=True)
     while True:
