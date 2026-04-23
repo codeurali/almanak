@@ -118,6 +118,29 @@ def explain_relationships(id: int) -> dict:
     return _tools.explain_relationships(id)
 
 
+@mcp.tool()
+def search_digest(
+    query: str,
+    top_k: int = 10,
+    theme: str = "",
+    days: int = 7,
+) -> list[dict]:
+    """
+    Search articles from the personal tech digest (last 7 days by default).
+
+    Semantically searches 140+ RSS feeds and GitHub Trending collected daily.
+    Useful to find articles on a specific topic without re-reading the digest.
+
+    Args:
+        query:  Natural-language search (e.g. "Rust async runtime", "LLM fine-tuning")
+        top_k:  Max results (default 10)
+        theme:  Optional filter: "🤖 AI & LLMs", "🔒 Sécurité & CVE",
+                "🦀 Rust, WASM & Systems", "🔧 Agents & MCP", etc.
+        days:   Articles from last N days (default 7)
+    """
+    return _tools.search_digest(query, top_k=top_k, theme=theme, days=days)
+
+
 # ── HTTP auth middleware ───────────────────────────────────────────────────────
 
 

@@ -27,6 +27,7 @@ from __future__ import annotations
 import io
 import os
 import re
+import subprocess
 import sys
 import time
 from datetime import datetime, timezone
@@ -211,11 +212,25 @@ def _handle_save(chat_id: int, text: str) -> None:
         # Shouldn't happen, but guard anyway
         pass
 
-    # Index only the newly inserted entry (incremental — avoids OOM on full re-index)
-    try:
-        qdrant.index(since=entry_id)
-    except Exception:
-        pass
+    # Index the newly inserted entry in an isolated subprocess — fastembed loads ~2.5 GB
+    # of model weights which triggers OOM killer if run in the bot process directly.
+    if settings.qdrant_enabled:
+        try:
+            received_at = (storage.get_by_id(entry_id) or {}).get("received_at", "")
+            subprocess.Popen(
+                [
+                    sys.executable, "-c",
+                    "import sys, os; "
+                    "sys.path.insert(0, os.environ.get('PYTHONPATH', 'src').split(':')[0]); "
+                    "from open_benchmark.indexer.qdrant_index import index; "
+                    f"index(since={received_at!r})",
+                ],
+                env=os.environ.copy(),
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+        except Exception:
+            pass
     if settings.feature_graph:
         try:
             graph.build_tag_relations()
@@ -259,11 +274,13 @@ def _handle_tag(chat_id: int, args: str) -> None:
         send(chat_id, "Usage: /tag &lt;id&gt; &lt;tags&gt;")
         return
     entry_id, tags = int(parts[0]), parts[1]
-    if not storage.get_by_id(entry_id):
+    row = storage.get_by_id(entry_id)
+    if not row:
         send(chat_id, f"Entry #{entry_id} not found.")
         return
     storage.update_tags(entry_id, tags)
-    send(chat_id, f"✅ Tags updated on #{entry_id}")
+    title = row.get("title") or row.get("url") or "(no title)"
+    send(chat_id, f"✅ <b>#{entry_id}</b> tags → <i>{tags}</i>\n{title}")
 
 
 def _handle_note(chat_id: int, args: str) -> None:
@@ -272,11 +289,13 @@ def _handle_note(chat_id: int, args: str) -> None:
         send(chat_id, "Usage: /note &lt;id&gt; &lt;text&gt;")
         return
     entry_id, note = int(parts[0]), parts[1]
-    if not storage.get_by_id(entry_id):
+    row = storage.get_by_id(entry_id)
+    if not row:
         send(chat_id, f"Entry #{entry_id} not found.")
         return
     storage.update_notes(entry_id, note)
-    send(chat_id, f"✅ Note updated on #{entry_id}")
+    title = row.get("title") or row.get("url") or "(no title)"
+    send(chat_id, f"✅ <b>#{entry_id}</b> note → <i>{note}</i>\n{title}")
 
 
 def _handle_rm(chat_id: int, args: str) -> None:
@@ -390,14 +409,22 @@ def run() -> None:
             resp = _tg("getUpdates", offset=offset, timeout=POLL_TIMEOUT)
             for update in resp.get("result", []):
                 new_offset = update["update_id"] + 1
-                msg = update.get("message")
+                # Accept both new and edited messages
+                msg = update.get("message") or update.get("edited_message")
                 if msg:
                     uid = msg.get("from", {}).get("id")
                     if uid == ALLOWED_UID:
                         text = msg.get("text") or msg.get("caption") or ""
                         if text:
                             _dispatch(msg["chat"]["id"], text)
-                # Persist offset AFTER processing so we never re-process on restart
+                        else:
+                            print(f"[bot] skip uid={uid} (no text, type={list(update.keys())})", flush=True)
+                    else:
+                        print(f"[bot] skip uid={uid} update_id={update['update_id']}", flush=True)
+                else:
+                    update_types = [k for k in update if k != "update_id"]
+                    print(f"[bot] skip non-message update: {update_types}", flush=True)
+                # Persist offset after each update regardless of whether it was dispatched
                 offset = new_offset
                 _save_offset(offset)
         except Exception as exc:

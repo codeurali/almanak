@@ -79,6 +79,8 @@ CREATE TABLE IF NOT EXISTS benchmark_relations (
 CREATE INDEX IF NOT EXISTS idx_relations_source ON benchmark_relations(source_id);
 CREATE INDEX IF NOT EXISTS idx_relations_target ON benchmark_relations(target_id);
 CREATE INDEX IF NOT EXISTS idx_relations_type   ON benchmark_relations(relation);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_benchmarks_url ON benchmarks(url);
 """
 
 # Columns that may be missing in databases created before this version
@@ -158,7 +160,7 @@ def insert(
 
     with conn(db_path) as c:
         cur = c.execute(
-            """INSERT INTO benchmarks
+            """INSERT OR IGNORE INTO benchmarks
                (received_at, url, canonical_url, title, description, summary,
                 content_text, type, subject, tags, notes, raw_text,
                 fingerprint, extraction_confidence, visibility)
@@ -169,6 +171,13 @@ def insert(
                 fingerprint, extraction_confidence, visibility,
             ),
         )
+        if cur.rowcount == 0:
+            # URL already exists — return the id of the existing entry
+            existing = c.execute(
+                "SELECT id FROM benchmarks WHERE url=?", (url,)
+            ).fetchone()
+            c.commit()
+            return existing["id"] if existing else -1
         row_id = cur.lastrowid
         c.commit()
     return row_id
