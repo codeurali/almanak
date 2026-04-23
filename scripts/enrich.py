@@ -21,7 +21,6 @@ import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from open_benchmark.config import settings
 from open_benchmark.extractor.classify import classify_subject, classify_type
 from open_benchmark.extractor.fetch import extract
 from open_benchmark.storage import db as storage

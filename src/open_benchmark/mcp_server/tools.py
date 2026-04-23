@@ -71,6 +71,66 @@ def get_benchmark(id: int) -> dict[str, Any] | None:
     return storage.get_by_id(id)
 
 
+def search_digest(
+    query: str,
+    top_k: int = 10,
+    theme: str = "",
+    days: int = 7,
+) -> list[dict[str, Any]]:
+    """
+    Search the personal tech digest articles indexed in Qdrant.
+
+    These are real articles collected daily from 140+ RSS feeds and GitHub Trending,
+    deduplicated and stored in the 'tech_digest_articles' collection.
+
+    Args:
+        query:  Natural-language search (e.g. "Rust async runtime", "LLM fine-tuning")
+        top_k:  Max results (default 10)
+        theme:  Optional theme filter, e.g. "🤖 AI & LLMs", "🔒 Sécurité & CVE",
+                "🦀 Rust, WASM & Systems", "🔧 Agents & MCP", "💻 Dev, React & Open Source",
+                "🏗 Architecture & Clean Engineering", "👤 Chercheurs & Hackers (blogs perso)",
+                "⚡ Power Platform & Dataverse", "☁️ Azure & Microsoft Dev", "📦 GitHub Trending"
+        days:   Only return articles from the last N days (default 7)
+    """
+    import datetime
+
+    try:
+        from qdrant_client import QdrantClient
+        from qdrant_client.models import Filter, FieldCondition, Range, MatchText
+        from fastembed import TextEmbedding
+
+        cutoff_ord = (datetime.date.today() - datetime.timedelta(days=days)).toordinal()
+
+        embedder = TextEmbedding("BAAI/bge-small-en-v1.5")
+        vec = list(embedder.embed([query]))[0].tolist()
+
+        filters = [FieldCondition(key="day_ord", range=Range(gte=cutoff_ord))]
+        if theme:
+            filters.append(FieldCondition(key="theme", match=MatchText(text=theme)))
+
+        client = QdrantClient(url="http://localhost:6333", timeout=5)
+        result = client.query_points(
+            collection_name="tech_digest_articles",
+            query=vec,
+            query_filter=Filter(must=filters),
+            limit=top_k,
+            with_payload=True,
+        )
+        return [
+            {
+                "score":       round(pt.score, 4),
+                "title":       pt.payload.get("title", ""),
+                "url":         pt.payload.get("url", ""),
+                "theme":       pt.payload.get("theme", ""),
+                "source_name": pt.payload.get("source_name", ""),
+                "date_sent":   pt.payload.get("date_sent", ""),
+            }
+            for pt in result.points
+        ]
+    except Exception as e:
+        return [{"error": str(e)}]
+
+
 def get_related_benchmarks(
     id: int,
     relation: str = "",

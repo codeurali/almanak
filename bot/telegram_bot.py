@@ -203,7 +203,7 @@ def _handle_save(chat_id: int, text: str) -> None:
 
     # Index only the newly inserted entry (incremental — avoids OOM on full re-index)
     try:
-        qdrant.index(since=since)
+        qdrant.index(since=entry_id)
     except Exception:
         pass
     if settings.feature_graph:
