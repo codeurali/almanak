@@ -130,12 +130,24 @@ def extract(url: str) -> ExtractionResult:
 
     # Layer 1 — HTTP fetch
     try:
-        resp = requests.get(
-            url,
-            headers={"User-Agent": settings.fetch_user_agent},
-            timeout=settings.fetch_timeout,
-            allow_redirects=True,
-        )
+        try:
+            resp = requests.get(
+                url,
+                headers={"User-Agent": settings.fetch_user_agent},
+                timeout=settings.fetch_timeout,
+                allow_redirects=True,
+            )
+        except requests.exceptions.SSLError:
+            # Retry without SSL verification for sites with invalid/self-signed certs
+            import urllib3
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+            resp = requests.get(
+                url,
+                headers={"User-Agent": settings.fetch_user_agent},
+                timeout=settings.fetch_timeout,
+                allow_redirects=True,
+                verify=False,
+            )
         result.canonical_url = resp.url  # resolved after redirects
         content_type = resp.headers.get("content-type", "").lower()
 
