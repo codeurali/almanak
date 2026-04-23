@@ -57,15 +57,24 @@ if not ALLOWED_UID:
 API = f"https://api.telegram.org/bot{TOKEN}"
 POLL_TIMEOUT = 30
 
-URL_RE = re.compile(r"https?://[^\s<>\"']+")
+URL_RE = re.compile(r"(?:https?://|(?<![\w@])(?=[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}))[^\s<>\"']+")
 TAG_RE = re.compile(r"#([A-Za-z0-9_\-]+)")
+
+
+def _normalize_url(url: str) -> str:
+    """Add https:// if no scheme is present."""
+    if not url.startswith(("http://", "https://")):
+        return "https://" + url
+    return url
 
 # ── Telegram helpers ───────────────────────────────────────────────────────────
 
 
 def _tg(method: str, **kwargs) -> dict:
+    # Use a longer read timeout for getUpdates (long-poll), 10s for everything else
+    req_timeout = POLL_TIMEOUT + 10 if kwargs.get("timeout") else 10
     try:
-        r = requests.post(f"{API}/{method}", json=kwargs, timeout=10)
+        r = requests.post(f"{API}/{method}", json=kwargs, timeout=req_timeout)
         return r.json()
     except Exception as exc:
         print(f"[tg] {method} error: {exc}", flush=True)
@@ -139,12 +148,18 @@ def _handle_save(chat_id: int, text: str) -> None:
         send(chat_id, "⚠️ No URL detected.")
         return
 
-    url = urls[0]
+    url = _normalize_url(urls[0])
     user_tags = ", ".join(TAG_RE.findall(text))
     note_text = TAG_RE.sub("", URL_RE.sub("", text)).strip()
 
     send(chat_id, "⏳ Fetching metadata…")
-    result = extract(url)
+    print(f"[bot] extracting {url}", flush=True)
+    try:
+        result = extract(url)
+    except Exception as exc:
+        print(f"[bot] extract error: {exc}", flush=True)
+        send(chat_id, f"❌ Failed to fetch metadata: {exc}")
+        return
 
     entry_type = classify_type(result.canonical_url, result.title, result.description)
     entry_subject = classify_subject(result.canonical_url, result.title, result.description)
@@ -289,6 +304,7 @@ def _handle_export(chat_id: int) -> None:
 
 
 def _dispatch(chat_id: int, text: str) -> None:
+    print(f"[bot] dispatch chat={chat_id} text={text[:80]!r}", flush=True)
     text = text.strip()
     if text.startswith("/list"):
         _handle_list(chat_id, text[5:].strip())
