@@ -84,6 +84,31 @@ def classify_type(url: str, title: str = "", description: str = "") -> str:
 
 _SUBJECT_PATTERNS: list[tuple[str, re.Pattern]] = [
     (
+        "agentic-tools",
+        re.compile(
+            r"\b(mcp|model.context.protocol|agentic.tool|agent.framework|agent.sdk"
+            r"|langgraph|langchain|crewai|autogen|llamaindex|llama.index|smolagents"
+            r"|openai.agents|claude.tool.use|function.calling|tool.use|tool.call"
+            r"|agent.orchestrat|multi.?agent|agent.loop|agent.workflow|agent.system"
+            r"|memory.agent|planning.agent|react.agent|reflexion|taskweaver|agentops"
+            r"|composio|e2b|dagger.ai|browseruse|computer.use|tool.augment)\b",
+            re.IGNORECASE,
+        ),
+    ),
+    (
+        "software-engineering",
+        re.compile(
+            r"\b(spec.driven|test.driven|tdd|bdd|ddd|domain.driven|clean.code"
+            r"|clean.architecture|solid.principle|design.pattern|refactor"
+            r"|code.review|technical.debt|engineering.practice|software.craft"
+            r"|openapi|swagger|api.contract|api.spec|api.first|schema.first"
+            r"|pair.programm|mob.programm|trunk.based|feature.flag|continuous.integr"
+            r"|monorepo|code.quality|software.architect|engineering.culture"
+            r"|developer.experience|dx|devex|inner.source|documentation.driven)\b",
+            re.IGNORECASE,
+        ),
+    ),
+    (
         "ai",
         re.compile(
             r"\b(ai|llm|gpt|claude|gemini|mistral|llama|machine.learning|deep.learning"
