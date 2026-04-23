@@ -201,6 +201,16 @@ def _handle_save(chat_id: int, text: str) -> None:
         extraction_confidence=result.extraction_confidence,
     )
 
+    # INSERT OR IGNORE: -1 means already existed (DB-level dedup caught it)
+    if entry_id < 0:
+        send(chat_id, "⚠️ Already saved (duplicate URL blocked at DB level).")
+        return
+
+    existing_check = storage.get_by_id(entry_id)
+    if existing_check and existing_check.get("received_at") != existing_check.get("received_at"):
+        # Shouldn't happen, but guard anyway
+        pass
+
     # Index only the newly inserted entry (incremental — avoids OOM on full re-index)
     try:
         qdrant.index(since=entry_id)
