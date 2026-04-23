@@ -153,14 +153,13 @@ def _handle_save(chat_id: int, text: str) -> None:
     all_tags = list(dict.fromkeys(result.tags + [t for t in user_tags.split(",") if t.strip()]))
     tags_str = ", ".join(all_tags)
 
-    # Dedup check
-    fingerprint = storage.url_fingerprint(result.canonical_url)
+    # Dedup check — use same key as insert(): canonical_url or url
+    fingerprint = storage.url_fingerprint(result.canonical_url or url)
     existing = storage.get_by_fingerprint(fingerprint)
     if existing:
         send(chat_id, f'⚠️ Already saved as <b>#{existing["id"]}</b> — {_fmt(existing)}')
         return
 
-    since = datetime.now(timezone.utc).isoformat()
     entry_id = storage.insert(
         url=url,
         canonical_url=result.canonical_url,
@@ -313,24 +312,43 @@ def _dispatch(chat_id: int, text: str) -> None:
         send(chat_id, "⚠️ Send a URL to save it, or /help for commands.")
 
 
+_OFFSET_FILE = os.path.join(os.path.dirname(__file__), ".tg_offset")
+
+
+def _load_offset() -> int:
+    try:
+        return int(open(_OFFSET_FILE).read().strip())
+    except Exception:
+        return 0
+
+
+def _save_offset(offset: int) -> None:
+    try:
+        with open(_OFFSET_FILE, "w") as f:
+            f.write(str(offset))
+    except Exception as exc:
+        print(f"[bot] offset save error: {exc}", flush=True)
+
+
 def run() -> None:
     init_db()
-    print(f"[bot] Starting — allowed UID: {ALLOWED_UID}", flush=True)
-    offset = 0
+    offset = _load_offset()
+    print(f"[bot] Starting — allowed UID: {ALLOWED_UID}, offset: {offset}", flush=True)
     while True:
         try:
             resp = _tg("getUpdates", offset=offset, timeout=POLL_TIMEOUT)
             for update in resp.get("result", []):
-                offset = update["update_id"] + 1
+                new_offset = update["update_id"] + 1
                 msg = update.get("message")
-                if not msg:
-                    continue
-                uid = msg.get("from", {}).get("id")
-                if uid != ALLOWED_UID:
-                    continue
-                text = msg.get("text") or msg.get("caption") or ""
-                if text:
-                    _dispatch(msg["chat"]["id"], text)
+                if msg:
+                    uid = msg.get("from", {}).get("id")
+                    if uid == ALLOWED_UID:
+                        text = msg.get("text") or msg.get("caption") or ""
+                        if text:
+                            _dispatch(msg["chat"]["id"], text)
+                # Persist offset AFTER processing so we never re-process on restart
+                offset = new_offset
+                _save_offset(offset)
         except Exception as exc:
             print(f"[bot] poll error: {exc}", flush=True)
             time.sleep(5)
