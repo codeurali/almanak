@@ -41,7 +41,6 @@ from open_benchmark.config import settings
 from open_benchmark.extractor.classify import classify_subject, classify_type
 from open_benchmark.extractor.fetch import extract
 from open_benchmark.graph import relations as graph
-from open_benchmark.indexer import qdrant_index as qdrant
 from open_benchmark.storage import db as storage
 from open_benchmark.storage.db import init_db
 
